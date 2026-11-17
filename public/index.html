@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Xem YouTube cùng phụ đề Anh–Việt đồng bộ.">
+  <title>Demo trang học tiếng Anh song ngữ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <!-- Thanh đầu trang mở hộp thoại nhập link YouTube. -->
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        <span>Demo trang học tiếng Anh song ngữ</span>
+      </div>
+      <button type="button" class="import" id="open-import"><span aria-hidden="true">＋</span> Mở video</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Thông tin và trình phát video YouTube. -->
+    <section aria-labelledby="video-title">
+      <div class="video-intro">
+        <div>
+          <p class="category"><span></span> VIDEO YOUTUBE</p>
+          <h1 id="video-title">Xem video với phụ đề</h1>
+        </div>
+        <a class="external" id="youtube-link" target="_blank" rel="noopener" hidden>Xem trên YouTube <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="theater" id="theater" hidden>
+        <div id="player-host" class="player-host"></div>
+        <button type="button" class="poster" id="play-video" aria-label="Phát video">
+          <span class="play-icon" aria-hidden="true"></span>
+          <span class="play-label" id="play-label">Phát video</span>
+        </button>
+      </div>
+      <p class="player-status" id="player-status" role="status" hidden></p>
+    </section>
+
+    <!-- Phụ đề, chế độ ngôn ngữ và nút cuộn theo câu đang phát. -->
+    <section class="transcript" aria-labelledby="transcript-title">
+      <div class="transcript-head">
+        <div class="transcript-title">
+          <span class="caption-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <div><h2 id="transcript-title">Phụ đề song ngữ</h2><p id="track-note">Mở video để tải phụ đề.</p></div>
+        </div>
+        <div class="transcript-tools">
+          <div class="modes" role="group" aria-label="Ngôn ngữ phụ đề">
+            <button type="button" data-mode="both" aria-pressed="true">Song ngữ</button>
+            <button type="button" data-mode="en" aria-pressed="false">English</button>
+            <button type="button" data-mode="vi" aria-pressed="false">Tiếng Việt</button>
+          </div>
+          <button type="button" class="follow" id="follow" aria-pressed="true" title="Tự cuộn đến câu đang phát"><span aria-hidden="true">◎</span> Tự cuộn</button>
+        </div>
+      </div>
+      <div class="caption-feedback" id="caption-feedback" hidden>
+        <p id="caption-message" role="status"></p>
+        <button type="button" class="follow" id="translate" hidden>Dịch phụ đề</button>
+      </div>
+      <ol class="cue-list" id="cue-list" data-mode="both" aria-label="Các câu phụ đề"></ol>
+    </section>
+  </main>
+
+  <!-- Hộp thoại nhận đường dẫn để tự lấy phụ đề có sẵn của video. -->
+  <dialog id="import-dialog" aria-labelledby="import-title">
+    <form id="import-form">
+      <div class="dialog-head">
+        <h2 id="import-title">Mở video YouTube</h2>
+        <button type="button" class="close" id="close-import" aria-label="Đóng">×</button>
+      </div>
+      <label for="video-url">Link YouTube</label>
+      <input id="video-url" type="url" placeholder="https://youtu.be/…" required>
+      <label for="video-name">Tên hiển thị <span class="muted">(tùy chọn)</span></label>
+      <input id="video-name" type="text" maxlength="150" placeholder="Tên video">
+      <p class="import-help">Trang sẽ tìm phụ đề có sẵn của video YouTube công khai.</p>
+      <p class="form-error" id="form-error" role="alert" hidden></p>
+      <button class="import submit" type="submit">Mở video và phụ đề <span aria-hidden="true">→</span></button>
+    </form>
+  </dialog>
+</body>
+</html>
