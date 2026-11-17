@@ -14,52 +14,57 @@ export function videoId(value) {
   return /^[a-zA-Z0-9_-]{11}$/.test(id ?? '') ? id : null;
 }
 
-// Ghép hai bản phụ đề theo các khoảng thời gian thực tế, kể cả khi tách câu khác nhau.
-export function mergeCaptions(english, vietnamese) {
-  const events = [];
-  for (const [language, track] of [['en', english], ['vi', vietnamese]]) {
-    for (const cue of track) {
-      events.push({ at: cue.start, opening: true, cue, language });
-      events.push({ at: cue.end, opening: false, cue, language });
+// Giữ mốc gốc của từng ngôn ngữ và gộp các đoạn cùng chữ liền nhau hoặc chồng lấn.
+export function captionRows(track, language) {
+  const rows = [];
+  const lastByText = new Map();
+  for (const { start, end, text } of [...track].sort((first, second) => first.start - second.start)) {
+    const key = text.normalize('NFC').replace(/\s+/g, ' ').trim();
+    const previous = lastByText.get(key);
+    if (previous && start <= previous.end) {
+      previous.end = Math.max(previous.end, end);
+      continue;
     }
+    const row = { start, end, en: '', vi: '', [language]: text };
+    rows.push(row);
+    lastByText.set(key, row);
   }
-  events.sort((first, second) => first.at - second.at);
-  const active = { en: new Set(), vi: new Set() };
-  const merged = [];
-  let previous = events[0]?.at ?? 0;
-  for (const { at, opening, cue, language } of events) {
-    if (at > previous && (active.en.size || active.vi.size)) {
-      const en = trackText(active.en);
-      const vi = trackText(active.vi);
-      const last = merged.at(-1);
-      if (last?.end === previous && last.en === en && last.vi === vi) {
-        last.end = at;
-      } else {
-        merged.push({ start: previous, end: at, en, vi });
+  return rows;
+}
+
+// Gắn mỗi đoạn tiếng Việt vào một dòng tiếng Anh có thời gian giao nhau nhiều nhất.
+export function mergeCaptions(english, vietnamese) {
+  const rows = captionRows(english, 'en');
+  const unmatched = [];
+  let firstCandidate = 0;
+  for (const cue of captionRows(vietnamese, 'vi')) {
+    while (firstCandidate < rows.length && rows[firstCandidate].end <= cue.start) {
+      firstCandidate += 1;
+    }
+    let match;
+    let longestOverlap = 0;
+    for (let index = firstCandidate; index < rows.length && rows[index].start < cue.end; index += 1) {
+      const row = rows[index];
+      const overlap = Math.min(row.end, cue.end) - Math.max(row.start, cue.start);
+      if (overlap > longestOverlap) {
+        match = row;
+        longestOverlap = overlap;
       }
     }
-    if (opening) active[language].add(cue);
-    else active[language].delete(cue);
-    previous = at;
+    if (match) match.vi = match.vi ? match.vi + '\n' + cue.vi : cue.vi;
+    else unmatched.push(cue);
   }
-  return merged;
+  return [...rows, ...unmatched].sort((first, second) => first.start - second.start);
 }
 
-// Gom các dòng cùng ngôn ngữ đang xuất hiện tại một thời điểm.
-function trackText(active) {
-  return [...new Set([...active].map((cue) => cue.text))].join('\n');
-}
-
-// Tìm câu ở mốc phát, giữ câu vừa qua khi người xem tua đến khoảng lặng.
+// Tìm dòng bắt đầu gần nhất tại mốc phát, kể cả khi hai đoạn chồng lấn.
 export function cueAt(cues, time) {
   let low = 0;
   let high = cues.length - 1;
   while (low <= high) {
     const middle = Math.floor((low + high) / 2);
-    const cue = cues[middle];
-    if (time < cue.start) high = middle - 1;
-    else if (time >= cue.end) low = middle + 1;
-    else return middle;
+    if (time < cues[middle].start) high = middle - 1;
+    else low = middle + 1;
   }
   return cues.length ? Math.max(0, high) : -1;
 }

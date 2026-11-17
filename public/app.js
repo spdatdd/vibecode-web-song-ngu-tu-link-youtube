@@ -1,4 +1,4 @@
-import { cueAt, mergeCaptions, timecode, videoId } from './captions.mjs';
+import { captionRows, cueAt, mergeCaptions, timecode, videoId } from './captions.mjs';
 
 // Lưu tham chiếu giao diện và trạng thái của video đang mở.
 const list = document.getElementById('cue-list');
@@ -30,10 +30,8 @@ function textSpan(className, text, language) {
 
 // Vẽ danh sách một lần khi mở video hoặc khi đổi chế độ ngôn ngữ.
 function renderCues() {
-  const mode = list.dataset.mode;
   const fragment = document.createDocumentFragment();
   state.buttons = state.video.cues.map((cue, index) => {
-    if (mode !== 'both' && !cue[mode]) return null;
     const item = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
@@ -125,10 +123,7 @@ function setCaptionMessage(message, target) {
 // Cập nhật danh sách mà không làm gián đoạn video đang phát.
 function updateTracks(video, tracks) {
   video.tracks = tracks;
-  video.cues = mergeCaptions(tracks.en, tracks.vi);
-  state.active = -1;
   applyMode(list.dataset.mode);
-  syncCaptions();
 }
 
 // Tự lấy phụ đề của ID video vừa mở và bỏ kết quả nếu người xem đã đổi video.
@@ -323,17 +318,23 @@ function importVideo(event) {
 
 // Chọn ngôn ngữ đang có và giữ mốc phát khi đổi chế độ hiển thị.
 function applyMode(language) {
-  const hasEnglish = state.video.cues.some((cue) => cue.en);
-  const hasVietnamese = state.video.cues.some((cue) => cue.vi);
+  const tracks = state.video.tracks ?? { en: [], vi: [] };
+  const hasEnglish = tracks.en.length > 0;
+  const hasVietnamese = tracks.vi.length > 0;
   const available = { both: hasEnglish || hasVietnamese, en: hasEnglish, vi: hasVietnamese };
-  list.dataset.mode = available[language] ? language : 'both';
+  const selected = available[language] ? language : 'both';
+  list.dataset.mode = selected;
+  state.video.cues = selected === 'both'
+    ? mergeCaptions(tracks.en, tracks.vi)
+    : captionRows(tracks[selected], selected);
+  state.active = -1;
   for (const mode of modes) {
     mode.disabled = !available[mode.dataset.mode];
     mode.setAttribute('aria-pressed', String(mode.dataset.mode === list.dataset.mode));
   }
   follow.disabled = !available.both;
   renderCues();
-  highlight(state.active);
+  syncCaptions();
 }
 
 // Áp dụng chế độ ngôn ngữ vừa được chọn.
